@@ -4,14 +4,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const templateClone    = beverageTemplate.cloneNode(true);
     let nextNumber         = document.querySelectorAll('.beverage').length + 1;
 
-    // Присваивает радиогруппе «milk» внутри данного fieldset уникальное имя
-    function assignMilkName(fieldset, id) {
-        fieldset
-            .querySelectorAll('input[type="radio"][name="milk"]')
-            .forEach(radio => {
-                radio.name = `milk_${id}`;
-            });
-    }
+    // Карта для нормальных форм названий молока
+    const milkMap = {
+        usual:    'обычное молоко',
+        'no-fat': 'обезжиренное молоко',
+        soy:      'соевое молоко',
+        coconut:  'кокосовое молоко'
+    };
+
+    // Карта для нормальных форм названий добавок
+    const optionsMap = {
+        'whipped cream': 'взбитые сливки',
+        marshmallow:     'зефирки',
+        chocolate:       'шоколад',
+        cinnamon:        'корица'
+    };
 
     function updateRemoveButtons() {
         const all = document.querySelectorAll('.beverage');
@@ -42,78 +49,68 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Инициализируем уже существующие формы
+    // Инициализация существующих форм
     document.querySelectorAll('.beverage').forEach((fs, idx) => {
         insertRemoveButton(fs);
         attachRemoveHandler(fs);
-        assignMilkName(fs, idx + 1);
+        // проставляем уникальное имя у radio milk
+        fs.querySelectorAll('input[type="radio"][name="milk"]').forEach(r => {
+            r.name = `milk_${idx+1}`;
+        });
     });
     updateRemoveButtons();
 
-    // Добавление новой формы
     addButton.addEventListener('click', () => {
-        const newFieldset = templateClone.cloneNode(true);
-        newFieldset.removeAttribute('id');
-
-        // Нумерация
-        const number = nextNumber++;
-        newFieldset.querySelector('.beverage-count')
-            .textContent = `Напиток №${number}`;
-
-        // Уникальная радиогруппа milk
-        assignMilkName(newFieldset, number);
-
-        insertRemoveButton(newFieldset);
-        attachRemoveHandler(newFieldset);
-
+        const id = nextNumber++;
+        const newFs = templateClone.cloneNode(true);
+        newFs.removeAttribute('id');
+        newFs.querySelector('.beverage-count').textContent = `Напиток №${id}`;
+        newFs.querySelectorAll('input[type="radio"][name="milk"]').forEach(r => {
+            r.name = `milk_${id}`;
+        });
+        insertRemoveButton(newFs);
+        attachRemoveHandler(newFs);
         const wrapper = addButton.parentNode;
-        wrapper.parentNode.insertBefore(newFieldset, wrapper);
+        wrapper.parentNode.insertBefore(newFs, wrapper);
         updateRemoveButtons();
     });
 
-    // Склонение "напиток"
+    const pluralRules = new Intl.PluralRules('ru', { type: 'cardinal' });
+    const drinkForms = { one: 'напиток', few: 'напитка', many: 'напитков', other: 'напитка' };
     function getDrinkForm(n) {
-        n = Math.abs(n) % 100;
-        const last = n % 10;
-        if (n > 10 && n < 20) return 'напитков';
-        if (last === 1)              return 'напиток';
-        if (last >= 2 && last <= 4)  return 'напитка';
-        return 'напитков';
+        return drinkForms[pluralRules.select(n)];
     }
 
-    // Модальное окно
-    const form        = document.querySelector('form');
-    const modal       = document.getElementById('orderModal');
-    const closeCross  = modal.querySelector('.modal-close');
-    const overlay     = modal.querySelector('.modal-overlay');
-    const orderCount  = modal.querySelector('#orderCount');
-    const orderDetails= modal.querySelector('#orderDetails');
+    const form= document.querySelector('form');
+    const modal= document.getElementById('orderModal');
+    const closeCross= modal.querySelector('.modal-close');
+    const overlay = modal.querySelector('.modal-overlay');
+    const orderCount= modal.querySelector('#orderCount');
+    const orderDetails = modal.querySelector('#orderDetails');
 
     form.addEventListener('submit', e => {
         e.preventDefault();
-
-        const count = document.querySelectorAll('.beverage').length;
+        const beverages = document.querySelectorAll('.beverage');
+        const count     = beverages.length;
         orderCount.textContent = `Вы заказали ${count} ${getDrinkForm(count)}`;
 
-        // Заполняем таблицу
         let html = '<table><thead><tr>'
             + '<th>Напиток</th><th>Молоко</th><th>Дополнительно</th>'
             + '</tr></thead><tbody>';
-
-        document.querySelectorAll('.beverage').forEach(fs => {
-            const drinkName = fs.querySelector('select').selectedOptions[0].textContent;
-            const milkName  = fs.querySelector(`input[name="milk_${fs.querySelector('.beverage-count').textContent.split('№')[1]}"]:checked`)
-                .parentNode.querySelector('span').textContent;
+        beverages.forEach(fs => {
+            const drink = fs.querySelector('select').selectedOptions[0].textContent;
+            const milkValue = fs.querySelector(`input[name^="milk_"]:checked`).value;
+            const milk = milkMap[milkValue] || '';
             const opts = Array.from(fs.querySelectorAll('input[name="options"]:checked'))
-                .map(ch => ch.parentNode.querySelector('span').textContent);
-
+                .map(ch => optionsMap[ch.value] || '')
+                .filter(Boolean)
+                .join(', ');
             html += '<tr>'
-                + `<td>${drinkName}</td>`
-                + `<td>${milkName}</td>`
-                + `<td>${opts.join(', ')}</td>`
+                + `<td>${drink}</td>`
+                + `<td>${milk}</td>`
+                + `<td>${opts}</td>`
                 + '</tr>';
         });
-
         html += '</tbody></table>';
         orderDetails.innerHTML = html;
 
