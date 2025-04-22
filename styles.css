@@ -45,3 +45,22 @@
     border-radius: 5px;
 }
 
+.beverage {
+    position: relative;
+}
+
+.remove-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    border: none;
+    background: none;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.remove-button:disabled {
+    visibility: hidden;
+    cursor: default;
+}
