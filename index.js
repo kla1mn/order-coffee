@@ -1,10 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const addButton       = document.querySelector('.add-button');
-    const beverageTemplate= document.querySelector('.beverage');
-    const templateClone   = beverageTemplate.cloneNode(true);
-    let nextNumber        = document.querySelectorAll('.beverage').length + 1;
+    const addButton        = document.querySelector('.add-button');
+    const beverageTemplate = document.querySelector('.beverage');
+    const templateClone    = beverageTemplate.cloneNode(true);
+    let nextNumber         = document.querySelectorAll('.beverage').length + 1;
 
-    // === функции для добавления/удаления напитков (без изменений) ===
+    // Присваивает радиогруппе «milk» внутри данного fieldset уникальное имя
+    function assignMilkName(fieldset, id) {
+        fieldset
+            .querySelectorAll('input[type="radio"][name="milk"]')
+            .forEach(radio => {
+                radio.name = `milk_${id}`;
+            });
+    }
+
     function updateRemoveButtons() {
         const all = document.querySelectorAll('.beverage');
         all.forEach(fs => {
@@ -12,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.disabled = all.length <= 1;
         });
     }
+
     function insertRemoveButton(fieldset) {
         if (!fieldset.querySelector('.remove-button')) {
             const btn = document.createElement('button');
@@ -22,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
             fieldset.insertBefore(btn, fieldset.firstElementChild);
         }
     }
+
     function attachRemoveHandler(fieldset) {
         const btn = fieldset.querySelector('.remove-button');
         btn.addEventListener('click', () => {
@@ -31,24 +41,37 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    document.querySelectorAll('.beverage').forEach(fs => {
+
+    // Инициализируем уже существующие формы
+    document.querySelectorAll('.beverage').forEach((fs, idx) => {
         insertRemoveButton(fs);
         attachRemoveHandler(fs);
+        assignMilkName(fs, idx + 1);
     });
     updateRemoveButtons();
+
+    // Добавление новой формы
     addButton.addEventListener('click', () => {
         const newFieldset = templateClone.cloneNode(true);
         newFieldset.removeAttribute('id');
+
+        // Нумерация
+        const number = nextNumber++;
         newFieldset.querySelector('.beverage-count')
-            .textContent = `Напиток №${nextNumber++}`;
+            .textContent = `Напиток №${number}`;
+
+        // Уникальная радиогруппа milk
+        assignMilkName(newFieldset, number);
+
         insertRemoveButton(newFieldset);
         attachRemoveHandler(newFieldset);
-        addButton.parentNode.parentNode.insertBefore(newFieldset, addButton.parentNode);
+
+        const wrapper = addButton.parentNode;
+        wrapper.parentNode.insertBefore(newFieldset, wrapper);
         updateRemoveButtons();
     });
-    // === /end добавление/удаление ===
 
-    // Функция склонения «напиток»
+    // Склонение "напиток"
     function getDrinkForm(n) {
         n = Math.abs(n) % 100;
         const last = n % 10;
@@ -59,17 +82,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Модальное окно
-    const form         = document.querySelector('form');
-    const modal        = document.getElementById('orderModal');
-    const closeCross   = modal.querySelector('.modal-close');
-    const overlay      = modal.querySelector('.modal-overlay');
-    const orderMessage = modal.querySelector('#orderMessage');
+    const form        = document.querySelector('form');
+    const modal       = document.getElementById('orderModal');
+    const closeCross  = modal.querySelector('.modal-close');
+    const overlay     = modal.querySelector('.modal-overlay');
+    const orderCount  = modal.querySelector('#orderCount');
+    const orderDetails= modal.querySelector('#orderDetails');
 
     form.addEventListener('submit', e => {
         e.preventDefault();
+
         const count = document.querySelectorAll('.beverage').length;
-        const formWord = getDrinkForm(count);
-        orderMessage.textContent = `Заказ принят! Вы заказали ${count} ${formWord}`;
+        orderCount.textContent = `Вы заказали ${count} ${getDrinkForm(count)}`;
+
+        // Заполняем таблицу
+        let html = '<table><thead><tr>'
+            + '<th>Напиток</th><th>Молоко</th><th>Дополнительно</th>'
+            + '</tr></thead><tbody>';
+
+        document.querySelectorAll('.beverage').forEach(fs => {
+            const drinkName = fs.querySelector('select').selectedOptions[0].textContent;
+            const milkName  = fs.querySelector(`input[name="milk_${fs.querySelector('.beverage-count').textContent.split('№')[1]}"]:checked`)
+                .parentNode.querySelector('span').textContent;
+            const opts = Array.from(fs.querySelectorAll('input[name="options"]:checked'))
+                .map(ch => ch.parentNode.querySelector('span').textContent);
+
+            html += '<tr>'
+                + `<td>${drinkName}</td>`
+                + `<td>${milkName}</td>`
+                + `<td>${opts.join(', ')}</td>`
+                + '</tr>';
+        });
+
+        html += '</tbody></table>';
+        orderDetails.innerHTML = html;
+
         modal.classList.remove('hidden');
     });
 
