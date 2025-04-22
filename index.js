@@ -1,23 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const addButton        = document.querySelector('.add-button');
+    const addButton = document.querySelector('.add-button');
     const beverageTemplate = document.querySelector('.beverage');
-    const templateClone    = beverageTemplate.cloneNode(true);
-    let nextNumber         = document.querySelectorAll('.beverage').length + 1;
+    const templateClone = beverageTemplate.cloneNode(true);
+    let nextNumber = document.querySelectorAll('.beverage').length + 1;
 
-    // Карта для нормальных форм названий молока
     const milkMap = {
-        usual:    'обычное молоко',
+        usual: 'обычное молоко',
         'no-fat': 'обезжиренное молоко',
-        soy:      'соевое молоко',
-        coconut:  'кокосовое молоко'
+        soy: 'соевое молоко',
+        coconut: 'кокосовое молоко'
     };
 
-    // Карта для нормальных форм названий добавок
     const optionsMap = {
         'whipped cream': 'взбитые сливки',
-        marshmallow:     'зефирки',
-        chocolate:       'шоколад',
-        cinnamon:        'корица'
+        marshmallow: 'зефирки',
+        chocolate: 'шоколад',
+        cinnamon: 'корица'
     };
 
     function updateRemoveButtons() {
@@ -49,11 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Инициализация существующих форм
     document.querySelectorAll('.beverage').forEach((fs, idx) => {
         insertRemoveButton(fs);
         attachRemoveHandler(fs);
-        // проставляем уникальное имя у radio milk
         fs.querySelectorAll('input[type="radio"][name="milk"]').forEach(r => {
             r.name = `milk_${idx+1}`;
         });
